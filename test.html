@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="theme-color" content="#000000">
+    <title>React App</title>
+    <style>
+        .App {
+            font-family: sans-serif;
+            text-align: center;
+            width: 32;
+            height: 32;
+        }
+    </style>
+</head>
+
+<body>
+    <noscript>
+        You need to enable JavaScript to run this app.
+    </noscript>
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        // App.tsx content
+        function App() {
+            const sum = (a, b) => ({ x: a.x + b.x, y: a.y + b.y });
+            const divide = (a, s) => ({ x: a.x / s, y: a.y / s });
+            const average = (a) => divide(a.reduce(sum), a.length);
+            const angle = (a, b) => (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
+            const takeRight = (a, n = 1) => a.slice(Math.max(a.length - n, 0));
+
+            const getPositionFromMouseEvent = (e) => ({ x: e.clientX, y: e.clientY });
+            const getPositionFromTouchEvent = (e) => ({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+
+            function Cursor() {
+                const cursorRef = React.useRef(null);
+                const previousPositionsRef = React.useRef([]);
+                const windowLength = 30;
+
+                const mutateCursorStyle = (position, angle) => {
+                    const cursorEl = cursorRef.current;
+                    if (cursorEl !== null) {
+                        cursorEl.style.top = `${position.y}px`;
+                        cursorEl.style.left = `${position.x}px`;
+
+                        const scale = 1.5; // Adjust this value to change the scale
+                        cursorEl.style.transform = `translate(-${10 * scale}px, -${9 * scale}px) scale(${scale}) rotate(${angle + 90}deg)`;
+                    }
+                };
+
+                const hideRealCursor = () => {
+                    const el = document.documentElement;
+                    const originalCursor = el.style.cursor;
+
+                    el.style.cursor = "none";
+
+                    return () => {
+                        el.style.cursor = originalCursor;
+                    };
+                };
+
+                const moveFakeCursor = () => {
+                    const onMouseMove = (e) => {
+                        const previousPositions = previousPositionsRef.current;
+                        const currentPosition = getPositionFromMouseEvent(e);
+
+                        previousPositions.push(currentPosition);
+
+                        mutateCursorStyle(
+                            currentPosition,
+                            angle(average(previousPositions), currentPosition)
+                        );
+
+                        previousPositionsRef.current = takeRight(previousPositions, windowLength);
+                    };
+
+                    document.addEventListener("mousemove", onMouseMove);
+
+                    return () => {
+                        document.removeEventListener("mousemove", onMouseMove);
+                    };
+                };
+
+                const moveFakeCursorViaTouch = () => {
+                    const onTouchMove = (e) => {
+                        const previousPositions = previousPositionsRef.current;
+                        const currentPosition = getPositionFromTouchEvent(e);
+
+                        previousPositions.push(currentPosition);
+
+                        mutateCursorStyle(
+                            currentPosition,
+                            angle(average(previousPositions), currentPosition)
+                        );
+
+                        previousPositionsRef.current = takeRight(previousPositions, windowLength);
+                    };
+
+                    document.addEventListener("touchmove", onTouchMove);
+
+                    return () => {
+                        document.removeEventListener("mousemove", onTouchMove);
+                    };
+                };
+
+                React.useEffect(moveFakeCursorViaTouch, []);
+                React.useEffect(moveFakeCursor, []);
+                React.useEffect(hideRealCursor, []);
+
+                return (
+                    <svg
+                        ref={cursorRef}
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 28 28"
+                        width={28}
+                        height={28}
+                        style={{
+                            position: "fixed",
+                            transition: "transform 10ms linear",
+                            filter: "drop-shadow(0 1px 1px rgba(0, 0, 0, .4))",
+                            transformOrigin: "10px 9px",
+                            pointerEvents: "none",
+                            userSelect: "none"
+                        }}
+                    >
+                        <polygon
+                            fill="#000000"
+                            points="8.2,20.9 8.2,4.9 19.8,16.5 13,16.5 12.6,16.6 "
+                        />
+                        <polygon fill="#000000" points="17.3,21.6 13.7,23.1 9,12 12.7,10.5 " />
+                        <rect
+                            x="12.5"
+                            y="13.6"
+                            transform="matrix(0.9221 -0.3871 0.3871 0.9221 -5.7605 6.5909)"
+                            width="2"
+                            height="8"
+                            fill="#ffffff"
+                        />
+                        <polygon fill="#FFFFFF" points="9.2,7.3 9.2,18.5 12.2,15.6 12.6,15.5 17.4,15.5 " />
+                    </svg>
+                );
+            }
+
+            return (
+                <div className="App">
+                    <Cursor />
+                </div>
+            );
+        }
+
+        const rootElement = document.getElementById("root");
+        ReactDOM.render(React.createElement(App), rootElement);
+    </script>
+</body>
+
+</html>
